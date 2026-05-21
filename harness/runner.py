@@ -12,8 +12,7 @@ class Checker(Protocol):
 
     name: str
 
-    def run(self, target: str) -> CheckResult:
-        ...
+    def run(self, target: str) -> CheckResult: ...
 
 
 @dataclass
@@ -40,9 +39,7 @@ class PytestChecker:
         )
         output = result.stdout + result.stderr
         passed = result.returncode == 0
-        return CheckResult(
-            name=self.name, passed=passed, output=output
-        )
+        return CheckResult(name=self.name, passed=passed, output=output)
 
 
 class BlackChecker:
@@ -59,9 +56,7 @@ class BlackChecker:
         output = result.stdout + result.stderr
         passed = result.returncode == 0
         errors = output.lower().count("would reformat")
-        return CheckResult(
-            name=self.name, passed=passed, output=output, errors=errors
-        )
+        return CheckResult(name=self.name, passed=passed, output=output, errors=errors)
 
 
 class IsortChecker:
@@ -78,9 +73,7 @@ class IsortChecker:
         output = result.stdout + result.stderr
         passed = result.returncode == 0
         errors = output.lower().count("incorrectly sorted")
-        return CheckResult(
-            name=self.name, passed=passed, output=output, errors=errors
-        )
+        return CheckResult(name=self.name, passed=passed, output=output, errors=errors)
 
 
 class Flake8Checker:

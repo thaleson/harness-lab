@@ -23,7 +23,7 @@ class Reporter:
         lines: list[str] = []
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        lines.append(f"# Harness Report")
+        lines.append("# Harness Report")
         lines.append("")
         lines.append(f"**Contract:** {evaluation.contract_name}")
         lines.append(f"**Date:** {timestamp}")
@@ -58,7 +58,9 @@ class Reporter:
         if evaluation.overall_status == "PASS":
             lines.append("> **Result:** Sprint approved. All quality gates passed.")
         else:
-            lines.append("> **Result:** Sprint blocked. Fix failing checks before merging.")
+            lines.append(
+                "> **Result:** Sprint blocked. Fix failing checks before merging."
+            )
 
         lines.append("")
         return "\n".join(lines)

@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 
 from harness.agent_executor import AgentExecutor
+from harness.agent_runtime import AgentRuntime
 from harness.contracts_loader import ContractLoader
 from harness.evaluator import Evaluator
 from harness.execution_reporter import ExecutionReporter
@@ -205,6 +206,56 @@ def execute_spec(path: str, output: str):
     reporter = ExecutionReporter()
     report_path = reporter.generate(plan, output)
     click.echo(f"\nExecution report written to: {report_path}")
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+def runtime_spec(path: str):
+    """Load a spec, generate plan, and execute it in the runtime."""
+    loader = OpenSpecLoader()
+    t = loader.load(path)
+
+    click.echo(f"Spec: {t.name}")
+    click.echo(f"Objetivo: {t.objetivo}")
+    click.echo("")
+
+    # Validate
+    validator = TaskValidator()
+    validation = validator.validate(t)
+
+    if validation.overall_status == "FAIL":
+        click.echo("Validation FAILED:")
+        for r in validation.results:
+            if not r.passed:
+                click.echo(f"  [FAIL] {r.rule}: {r.details}")
+        click.echo("")
+        click.echo("Status: BLOCKED")
+        return
+
+    # Generate plan
+    executor = AgentExecutor(validator=validator)
+    plan = executor.generate_plan(t)
+
+    # Execute in runtime
+    runtime = AgentRuntime()
+    result = runtime.execute(plan)
+
+    click.echo("Runtime Execution")
+    click.echo("=" * 40)
+
+    for sr in result.step_results:
+        click.echo(
+            f"  [{sr.step.order:>2}] {sr.step.action.upper():<10} "
+            f"... {sr.status} ({sr.duration_ms}ms)"
+        )
+
+    click.echo("")
+    click.echo(f"Status: {result.overall_status}")
+    click.echo(f"Duration: {result.total_duration_ms}ms")
+
+    success_count = sum(1 for sr in result.step_results if sr.status == "SUCCESS")
+    total = len(result.step_results)
+    click.echo(f"Steps: {success_count}/{total} SUCCESS")
 
 
 if __name__ == "__main__":

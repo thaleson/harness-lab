@@ -277,3 +277,53 @@ def test_execute_spec_generates_report(runner, tmp_path):
     content = report_file.read_text()
     assert "Test Spec" in content
     assert "READY" in content
+
+
+def test_runtime_spec_completed(runner, tmp_path):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Test Spec\n"
+        "\n"
+        "## Description\n"
+        "Testar.\n"
+        "\n"
+        "## Requirements\n"
+        "- Req 1\n"
+        "\n"
+        "## Constraints\n"
+        "- C1\n"
+        "\n"
+        "## Files\n"
+        "- src/app.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Works\n"
+    )
+
+    result = runner.invoke(main, ["runtime-spec", str(spec_file)])
+
+    assert result.exit_code == 0
+    assert "Test Spec" in result.output
+    assert "Runtime Execution" in result.output
+    assert "VALIDATE" in result.output
+    assert "SUCCESS" in result.output
+    assert "Status: COMPLETED" in result.output
+    assert "Duration:" in result.output
+    assert "Steps:" in result.output
+
+
+def test_runtime_spec_blocked(runner, tmp_path):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text("# Spec\n" "\n" "## Description\n" "Algo.\n")
+
+    result = runner.invoke(main, ["runtime-spec", str(spec_file)])
+
+    assert result.exit_code == 0
+    assert "Validation FAILED" in result.output
+    assert "Status: BLOCKED" in result.output
+
+
+def test_runtime_spec_missing_file(runner):
+    result = runner.invoke(main, ["runtime-spec", "/nonexistent/spec.md"])
+
+    assert result.exit_code != 0

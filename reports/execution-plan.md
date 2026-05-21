@@ -3,7 +3,7 @@
 **Task:** Auth Refactor
 **Objetivo:** Refatorar auth.
 **Status:** READY
-**Date:** 2026-05-21 13:15:56
+**Date:** 2026-05-21 13:32:52
 
 ## Steps
 

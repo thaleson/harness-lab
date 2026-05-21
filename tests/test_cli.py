@@ -194,3 +194,86 @@ def test_execute_task_missing_file(runner):
     result = runner.invoke(main, ["execute-task", "/nonexistent/task.md"])
 
     assert result.exit_code != 0
+
+
+def test_execute_spec_ready(runner, tmp_path):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Auth Refactor\n"
+        "\n"
+        "## Description\n"
+        "Refatorar auth.\n"
+        "\n"
+        "## Requirements\n"
+        "- Usar pathlib\n"
+        "\n"
+        "## Constraints\n"
+        "- Não quebrar API\n"
+        "\n"
+        "## Files\n"
+        "- src/auth.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Testes passam\n"
+    )
+
+    result = runner.invoke(main, ["execute-spec", str(spec_file)])
+
+    assert result.exit_code == 0
+    assert "Auth Refactor" in result.output
+    assert "VALIDATE" in result.output
+    assert "READ" in result.output
+    assert "CHECK" in result.output
+    assert "Status: READY" in result.output
+    assert "Execution report written to" in result.output
+
+
+def test_execute_spec_blocked(runner, tmp_path):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text("# Spec\n" "\n" "## Description\n" "Algo.\n")
+
+    result = runner.invoke(main, ["execute-spec", str(spec_file)])
+
+    assert result.exit_code == 0
+    assert "Validation FAILED" in result.output
+    assert "Status: BLOCKED" in result.output
+
+
+def test_execute_spec_missing_file(runner):
+    result = runner.invoke(main, ["execute-spec", "/nonexistent/spec.md"])
+
+    assert result.exit_code != 0
+
+
+def test_execute_spec_generates_report(runner, tmp_path):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Test Spec\n"
+        "\n"
+        "## Description\n"
+        "Testar.\n"
+        "\n"
+        "## Requirements\n"
+        "- Req 1\n"
+        "\n"
+        "## Constraints\n"
+        "- C1\n"
+        "\n"
+        "## Files\n"
+        "- src/app.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Works\n"
+    )
+    report_file = tmp_path / "report.md"
+
+    result = runner.invoke(
+        main,
+        ["execute-spec", str(spec_file), "--output", str(report_file)],
+    )
+
+    assert result.exit_code == 0
+    assert report_file.exists()
+    content = report_file.read_text()
+    assert "Test Spec" in content
+    assert "READY" in content

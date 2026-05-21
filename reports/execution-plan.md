@@ -1,16 +1,16 @@
 # Execution Plan Report
 
-**Task:** Feature 001 - Test
-**Objetivo:** Testar.
+**Task:** Auth Refactor
+**Objetivo:** Refatorar auth.
 **Status:** READY
-**Date:** 2026-05-21 09:45:10
+**Date:** 2026-05-21 13:15:56
 
 ## Steps
 
 | # | Action | Target | Description |
 |---|--------|--------|-------------|
 | 1 | VALIDATE | task | Validar estrutura da task |
-| 2 | READ | cli.py | Ler cli.py |
+| 2 | READ | src/auth.py | Ler src/auth.py |
 | 3 | CHECK | pytest | Rodar pytest |
 | 4 | CHECK | black | Rodar black |
 | 5 | CHECK | isort | Rodar isort |
@@ -19,8 +19,9 @@
 
 ## Arquivos Envolvidos
 
-- cli.py
+- src/auth.py
 
 ## Regras
 
-- Regra 1
+- Usar pathlib
+- Não quebrar API

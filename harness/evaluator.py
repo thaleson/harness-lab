@@ -31,9 +31,7 @@ class Evaluation:
 class Evaluator:
     """Evaluates check results against contract thresholds."""
 
-    def evaluate(
-        self, contract: Contract, results: list[CheckResult]
-    ) -> Evaluation:
+    def evaluate(self, contract: Contract, results: list[CheckResult]) -> Evaluation:
         """Evaluate results against the contract."""
         result_map = {r.name: r for r in results}
         check_evals: list[CheckEvaluation] = []
@@ -54,11 +52,7 @@ class Evaluator:
             eval_result = self._evaluate_check(check, result)
             check_evals.append(eval_result)
 
-        overall = (
-            "PASS"
-            if all(e.passed for e in check_evals)
-            else "FAIL"
-        )
+        overall = "PASS" if all(e.passed for e in check_evals) else "FAIL"
 
         return Evaluation(
             contract_name=contract.name,

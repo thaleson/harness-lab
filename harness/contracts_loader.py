@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -70,9 +69,7 @@ class ContractLoader:
                 continue
 
             if len(cells) >= 3:
-                checks.append(
-                    Check(name=cells[0], tool=cells[1], threshold=cells[2])
-                )
+                checks.append(Check(name=cells[0], tool=cells[1], threshold=cells[2]))
 
         return checks
 

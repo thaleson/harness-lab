@@ -8,6 +8,7 @@ from harness.contracts_loader import ContractLoader
 from harness.evaluator import Evaluator
 from harness.reporter import Reporter
 from harness.runner import CheckRunner
+from harness.task_loader import TaskLoader
 
 CONTRACT_PATH = Path("contracts/sprint-1.md")
 REPORT_PATH = Path("reports/report.md")
@@ -58,6 +59,30 @@ def run(contract: str, output: str):
     reporter = Reporter()
     report_path = reporter.generate(evaluation, output)
     click.echo(f"\nReport written to: {report_path}")
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+def task(path: str):
+    """Load and display a task summary from a Markdown file."""
+    loader = TaskLoader()
+    t = loader.load(path)
+
+    click.echo(f"Task: {t.name}")
+    click.echo("")
+    click.echo(f"Objetivo: {t.objetivo}")
+    click.echo("")
+    click.echo(f"Regras ({len(t.regras)}):")
+    for r in t.regras:
+        click.echo(f"  - {r}")
+    click.echo("")
+    click.echo(f"Arquivos Permitidos ({len(t.arquivos_permitidos)}):")
+    for f in t.arquivos_permitidos:
+        click.echo(f"  - {f}")
+    click.echo("")
+    click.echo(f"Critérios de Aceite ({len(t.criterios)}):")
+    for c in t.criterios:
+        click.echo(f"  - {c}")
 
 
 if __name__ == "__main__":

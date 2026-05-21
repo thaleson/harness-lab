@@ -144,6 +144,39 @@ def test_execute_task_ready(runner, tmp_path):
     assert "CHECK" in result.output
     assert "SUMMARIZE" in result.output
     assert "Status: READY" in result.output
+    assert "Execution report written to" in result.output
+
+
+def test_execute_task_generates_report(runner, tmp_path):
+    task_file = tmp_path / "task.md"
+    task_file.write_text(
+        "# Feature 001 - Test\n"
+        "\n"
+        "## Objetivo\n"
+        "Testar.\n"
+        "\n"
+        "## Regras\n"
+        "- Regra 1\n"
+        "\n"
+        "## Arquivos Permitidos\n"
+        "- cli.py\n"
+        "\n"
+        "## Critérios de Aceite\n"
+        "- Funciona\n"
+    )
+    report_file = tmp_path / "report.md"
+
+    result = runner.invoke(
+        main,
+        ["execute-task", str(task_file), "--output", str(report_file)],
+    )
+
+    assert result.exit_code == 0
+    assert report_file.exists()
+    content = report_file.read_text()
+    assert "Feature 001 - Test" in content
+    assert "READY" in content
+    assert "VALIDATE" in content
 
 
 def test_execute_task_blocked(runner, tmp_path):

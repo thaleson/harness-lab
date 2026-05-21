@@ -4,11 +4,13 @@ from pathlib import Path
 
 import click
 
+from harness.agent_executor import AgentExecutor
 from harness.contracts_loader import ContractLoader
 from harness.evaluator import Evaluator
 from harness.reporter import Reporter
 from harness.runner import CheckRunner
 from harness.task_loader import TaskLoader
+from harness.task_validator import TaskValidator
 
 CONTRACT_PATH = Path("contracts/sprint-1.md")
 REPORT_PATH = Path("reports/report.md")
@@ -83,6 +85,65 @@ def task(path: str):
     click.echo(f"Critérios de Aceite ({len(t.criterios)}):")
     for c in t.criterios:
         click.echo(f"  - {c}")
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+def validate_task(path: str):
+    """Validate a task structure before execution."""
+    loader = TaskLoader()
+    t = loader.load(path)
+
+    validator = TaskValidator()
+    validation = validator.validate(t)
+
+    click.echo(f"Task: {t.name}")
+    click.echo("")
+
+    for r in validation.results:
+        status = "PASS" if r.passed else "FAIL"
+        click.echo(f"  [{status}] {r.rule}: {r.details}")
+
+    click.echo("")
+    click.echo(f"Status: {validation.overall_status}")
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+def execute_task(path: str):
+    """Load, validate, and generate an execution plan for a task."""
+    loader = TaskLoader()
+    t = loader.load(path)
+
+    click.echo(f"Task: {t.name}")
+    click.echo(f"Objetivo: {t.objetivo}")
+    click.echo("")
+
+    # Validate first
+    validator = TaskValidator()
+    validation = validator.validate(t)
+
+    if validation.overall_status == "FAIL":
+        click.echo("Validation FAILED:")
+        for r in validation.results:
+            if not r.passed:
+                click.echo(f"  [FAIL] {r.rule}: {r.details}")
+        click.echo("")
+        click.echo("Status: BLOCKED")
+        return
+
+    # Generate plan
+    executor = AgentExecutor(validator=validator)
+    plan = executor.generate_plan(t)
+
+    click.echo("Execution Plan:")
+    for step in plan.steps:
+        click.echo(
+            f"  [{step.order:>2}] {step.action.upper():<10} - " f"{step.description}"
+        )
+
+    click.echo("")
+    click.echo(f"Status: {plan.status}")
 
 
 if __name__ == "__main__":

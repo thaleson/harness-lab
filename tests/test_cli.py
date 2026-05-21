@@ -72,3 +72,92 @@ def test_task_command_shows_counts(runner, tmp_path):
     assert "Regras (2)" in result.output
     assert "Arquivos Permitidos (3)" in result.output
     assert "Critérios de Aceite (1)" in result.output
+
+
+def test_validate_task_pass(runner, tmp_path):
+    task_file = tmp_path / "task.md"
+    task_file.write_text(
+        "# Feature 001 - Test\n"
+        "\n"
+        "## Objetivo\n"
+        "Testar.\n"
+        "\n"
+        "## Regras\n"
+        "- Regra 1\n"
+        "\n"
+        "## Arquivos Permitidos\n"
+        "- cli.py\n"
+        "\n"
+        "## Critérios de Aceite\n"
+        "- Funciona\n"
+    )
+
+    result = runner.invoke(main, ["validate-task", str(task_file)])
+
+    assert result.exit_code == 0
+    assert "Feature 001 - Test" in result.output
+    assert "[PASS]" in result.output
+    assert "Status: PASS" in result.output
+
+
+def test_validate_task_fail(runner, tmp_path):
+    task_file = tmp_path / "task.md"
+    task_file.write_text("# Task\n" "\n" "## Objetivo\n" "Algo.\n")
+
+    result = runner.invoke(main, ["validate-task", str(task_file)])
+
+    assert result.exit_code == 0
+    assert "[FAIL]" in result.output
+    assert "Status: FAIL" in result.output
+
+
+def test_validate_task_missing_file(runner):
+    result = runner.invoke(main, ["validate-task", "/nonexistent/task.md"])
+
+    assert result.exit_code != 0
+
+
+def test_execute_task_ready(runner, tmp_path):
+    task_file = tmp_path / "task.md"
+    task_file.write_text(
+        "# Feature 001 - Test\n"
+        "\n"
+        "## Objetivo\n"
+        "Testar.\n"
+        "\n"
+        "## Regras\n"
+        "- Regra 1\n"
+        "\n"
+        "## Arquivos Permitidos\n"
+        "- cli.py\n"
+        "\n"
+        "## Critérios de Aceite\n"
+        "- Funciona\n"
+    )
+
+    result = runner.invoke(main, ["execute-task", str(task_file)])
+
+    assert result.exit_code == 0
+    assert "Feature 001 - Test" in result.output
+    assert "VALIDATE" in result.output
+    assert "READ" in result.output
+    assert "CHECK" in result.output
+    assert "SUMMARIZE" in result.output
+    assert "Status: READY" in result.output
+
+
+def test_execute_task_blocked(runner, tmp_path):
+    task_file = tmp_path / "task.md"
+    task_file.write_text("# Task\n" "\n" "## Objetivo\n" "Algo.\n")
+
+    result = runner.invoke(main, ["execute-task", str(task_file)])
+
+    assert result.exit_code == 0
+    assert "Validation FAILED" in result.output
+    assert "Status: BLOCKED" in result.output
+
+
+def test_execute_task_missing_file(runner):
+    result = runner.invoke(main, ["execute-task", "/nonexistent/task.md"])
+
+    assert result.exit_code != 0

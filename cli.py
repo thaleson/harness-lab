@@ -7,6 +7,7 @@ import click
 from harness.agent_executor import AgentExecutor
 from harness.contracts_loader import ContractLoader
 from harness.evaluator import Evaluator
+from harness.execution_reporter import ExecutionReporter
 from harness.reporter import Reporter
 from harness.runner import CheckRunner
 from harness.task_loader import TaskLoader
@@ -14,6 +15,7 @@ from harness.task_validator import TaskValidator
 
 CONTRACT_PATH = Path("contracts/sprint-1.md")
 REPORT_PATH = Path("reports/report.md")
+EXECUTION_REPORT_PATH = Path("reports/execution-plan.md")
 
 
 @click.group()
@@ -110,7 +112,12 @@ def validate_task(path: str):
 
 @main.command()
 @click.argument("path", type=click.Path(exists=True))
-def execute_task(path: str):
+@click.option(
+    "--output",
+    default=str(EXECUTION_REPORT_PATH),
+    help="Path to write the execution plan report.",
+)
+def execute_task(path: str, output: str):
     """Load, validate, and generate an execution plan for a task."""
     loader = TaskLoader()
     t = loader.load(path)
@@ -144,6 +151,11 @@ def execute_task(path: str):
 
     click.echo("")
     click.echo(f"Status: {plan.status}")
+
+    # Generate report
+    reporter = ExecutionReporter()
+    report_path = reporter.generate(plan, output)
+    click.echo(f"\nExecution report written to: {report_path}")
 
 
 if __name__ == "__main__":

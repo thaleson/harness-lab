@@ -1,0 +1,30 @@
+[project]
+name = "harness-lab"
+version = "0.1.0"
+description = "Mini Harness Engineering system based on Markdown contracts"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+    "pytest>=7.0",
+    "black>=23.0",
+    "isort>=5.0",
+    "flake8>=6.0",
+]
+
+[project.scripts]
+harness-lab = "cli:main"
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

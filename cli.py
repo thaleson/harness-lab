@@ -8,6 +8,7 @@ from harness.agent_executor import AgentExecutor
 from harness.contracts_loader import ContractLoader
 from harness.evaluator import Evaluator
 from harness.execution_reporter import ExecutionReporter
+from harness.openspec_bridge import OpenSpecLoader
 from harness.reporter import Reporter
 from harness.runner import CheckRunner
 from harness.task_loader import TaskLoader
@@ -123,6 +124,54 @@ def execute_task(path: str, output: str):
     t = loader.load(path)
 
     click.echo(f"Task: {t.name}")
+    click.echo(f"Objetivo: {t.objetivo}")
+    click.echo("")
+
+    # Validate first
+    validator = TaskValidator()
+    validation = validator.validate(t)
+
+    if validation.overall_status == "FAIL":
+        click.echo("Validation FAILED:")
+        for r in validation.results:
+            if not r.passed:
+                click.echo(f"  [FAIL] {r.rule}: {r.details}")
+        click.echo("")
+        click.echo("Status: BLOCKED")
+        return
+
+    # Generate plan
+    executor = AgentExecutor(validator=validator)
+    plan = executor.generate_plan(t)
+
+    click.echo("Execution Plan:")
+    for step in plan.steps:
+        click.echo(
+            f"  [{step.order:>2}] {step.action.upper():<10} - " f"{step.description}"
+        )
+
+    click.echo("")
+    click.echo(f"Status: {plan.status}")
+
+    # Generate report
+    reporter = ExecutionReporter()
+    report_path = reporter.generate(plan, output)
+    click.echo(f"\nExecution report written to: {report_path}")
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+@click.option(
+    "--output",
+    default=str(EXECUTION_REPORT_PATH),
+    help="Path to write the execution plan report.",
+)
+def execute_spec(path: str, output: str):
+    """Load an OpenSpec spec and generate an execution plan."""
+    loader = OpenSpecLoader()
+    t = loader.load(path)
+
+    click.echo(f"Spec: {t.name}")
     click.echo(f"Objetivo: {t.objetivo}")
     click.echo("")
 

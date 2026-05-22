@@ -327,3 +327,107 @@ def test_runtime_spec_missing_file(runner):
     result = runner.invoke(main, ["runtime-spec", "/nonexistent/spec.md"])
 
     assert result.exit_code != 0
+
+
+def test_runtime_apply_completes(runner, tmp_path, monkeypatch):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Test Spec\n"
+        "\n"
+        "## Description\n"
+        "Test.\n"
+        "\n"
+        "## Requirements\n"
+        "- R1\n"
+        "\n"
+        "## Constraints\n"
+        "- C1\n"
+        "\n"
+        "## Files\n"
+        "- app.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Works\n"
+    )
+    (tmp_path / "app.py").write_text("print('hello')\n")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(main, ["runtime-apply", str(spec_file)])
+
+    assert result.exit_code == 0
+    assert "Mode: DRY-RUN" in result.output
+    assert "Safe File Runtime" in result.output
+    assert "COMPLETED" in result.output
+    # File should NOT be modified in dry-run mode
+    assert (tmp_path / "app.py").read_text() == "print('hello')\n"
+
+
+def test_runtime_apply_with_apply_flag(runner, tmp_path, monkeypatch):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Test Spec\n"
+        "\n"
+        "## Description\n"
+        "Test.\n"
+        "\n"
+        "## Requirements\n"
+        "- R1\n"
+        "\n"
+        "## Constraints\n"
+        "- C1\n"
+        "\n"
+        "## Files\n"
+        "- app.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Works\n"
+    )
+    (tmp_path / "app.py").write_text("print('hello')\n")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(main, ["runtime-apply", str(spec_file), "--apply"])
+
+    assert result.exit_code == 0
+    assert "Mode: APPLY" in result.output
+    assert "COMPLETED" in result.output
+    # File SHOULD be modified in apply mode
+    content = (tmp_path / "app.py").read_text()
+    assert "harness-lab" in content
+
+
+def test_runtime_apply_blocked(runner, tmp_path, monkeypatch):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Test Spec\n"
+        "\n"
+        "## Description\n"
+        "Test.\n"
+        "\n"
+        "## Requirements\n"
+        "- R1\n"
+        "\n"
+        "## Constraints\n"
+        "- C1\n"
+        "\n"
+        "## Files\n"
+        "- secret.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Works\n"
+    )
+    # app.py exists but is NOT in allowed files
+    (tmp_path / "app.py").write_text("code\n")
+    # secret.py is in allowed files but doesn't exist yet
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(main, ["runtime-apply", str(spec_file)])
+
+    assert result.exit_code == 0
+    # secret.py is allowed, so it should succeed (created from scratch)
+    assert "COMPLETED" in result.output
+
+
+def test_runtime_apply_missing_file(runner):
+    result = runner.invoke(main, ["runtime-apply", "/nonexistent/spec.md"])
+
+    assert result.exit_code != 0

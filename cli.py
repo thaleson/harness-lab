@@ -9,6 +9,7 @@ from harness.agent_runtime import AgentRuntime
 from harness.contracts_loader import ContractLoader
 from harness.evaluator import Evaluator
 from harness.execution_reporter import ExecutionReporter
+from harness.file_runtime import FilePatch, SafeFileRuntime
 from harness.openspec_bridge import OpenSpecLoader
 from harness.reporter import Reporter
 from harness.runner import CheckRunner
@@ -256,6 +257,66 @@ def runtime_spec(path: str):
     success_count = sum(1 for sr in result.step_results if sr.status == "SUCCESS")
     total = len(result.step_results)
     click.echo(f"Steps: {success_count}/{total} SUCCESS")
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+@click.option(
+    "--apply",
+    is_flag=True,
+    default=False,
+    help="Apply patches for real. Without this flag, runs in dry-run mode.",
+)
+def runtime_apply(path: str, apply: bool):
+    """Load a spec, validate, and apply file patches (dry-run by default)."""
+    loader = OpenSpecLoader()
+    t = loader.load(path)
+
+    mode = "APPLY" if apply else "DRY-RUN"
+    click.echo(f"Spec: {t.name}")
+    click.echo(f"Objetivo: {t.objetivo}")
+    click.echo(f"Mode: {mode}")
+    click.echo("")
+
+    # Validate
+    validator = TaskValidator()
+    validation = validator.validate(t)
+
+    if validation.overall_status == "FAIL":
+        click.echo("Validation FAILED:")
+        for r in validation.results:
+            if not r.passed:
+                click.echo(f"  [FAIL] {r.rule}: {r.details}")
+        click.echo("")
+        click.echo("Status: BLOCKED")
+        return
+
+    # Create patches for each allowed file
+    patches = [
+        FilePatch(
+            target=arquivo,
+            content=f"\n# [harness-lab] Patch from spec: {t.name}\n",
+        )
+        for arquivo in t.arquivos_permitidos
+    ]
+
+    # Apply patches
+    workspace = Path(".")
+    runtime = SafeFileRuntime(workspace=workspace, allowed_files=t.arquivos_permitidos)
+    result = runtime.apply_patches(patches, dry_run=not apply)
+
+    click.echo("Safe File Runtime")
+    click.echo("=" * 40)
+
+    for r in result.results:
+        click.echo(f"  [{r.status}] {r.target}: {r.message}")
+
+    click.echo("")
+    click.echo(f"Status: {result.overall_status}")
+
+    success_count = sum(1 for r in result.results if r.status == "SUCCESS")
+    total = len(result.results)
+    click.echo(f"Files: {success_count}/{total} SUCCESS")
 
 
 if __name__ == "__main__":

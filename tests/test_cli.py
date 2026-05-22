@@ -431,3 +431,75 @@ def test_runtime_apply_missing_file(runner):
     result = runner.invoke(main, ["runtime-apply", "/nonexistent/spec.md"])
 
     assert result.exit_code != 0
+
+
+def test_runtime_diff_dry_run(runner, tmp_path, monkeypatch):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Test Spec\n"
+        "\n"
+        "## Description\n"
+        "Test.\n"
+        "\n"
+        "## Requirements\n"
+        "- R1\n"
+        "\n"
+        "## Constraints\n"
+        "- C1\n"
+        "\n"
+        "## Files\n"
+        "- app.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Works\n"
+    )
+    (tmp_path / "app.py").write_text("# TODO\nprint('hello')\n")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(main, ["runtime-diff", str(spec_file)])
+
+    assert result.exit_code == 0
+    assert "Mode: DRY-RUN" in result.output
+    assert "Diff Patch Engine" in result.output
+    assert "COMPLETED" in result.output
+    # File should NOT be modified in dry-run mode
+    assert (tmp_path / "app.py").read_text() == "# TODO\nprint('hello')\n"
+
+
+def test_runtime_diff_with_apply_flag(runner, tmp_path, monkeypatch):
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text(
+        "# Test Spec\n"
+        "\n"
+        "## Description\n"
+        "Test.\n"
+        "\n"
+        "## Requirements\n"
+        "- R1\n"
+        "\n"
+        "## Constraints\n"
+        "- C1\n"
+        "\n"
+        "## Files\n"
+        "- app.py\n"
+        "\n"
+        "## Acceptance Criteria\n"
+        "- Works\n"
+    )
+    (tmp_path / "app.py").write_text("# TODO\nprint('hello')\n")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(main, ["runtime-diff", str(spec_file), "--apply"])
+
+    assert result.exit_code == 0
+    assert "Mode: APPLY" in result.output
+    assert "Diff Patch Engine" in result.output
+    # File SHOULD be modified in apply mode
+    content = (tmp_path / "app.py").read_text()
+    assert "# DONE" in content
+
+
+def test_runtime_diff_missing_file(runner):
+    result = runner.invoke(main, ["runtime-diff", "/nonexistent/spec.md"])
+
+    assert result.exit_code != 0

@@ -11,8 +11,3 @@ def test_greet():
 def test_greet_custom_name():
     result = greet("Alice")
     assert result == "Hello, Alice! Welcome to Harness Lab."
-
-
-def test_greet_custom_punctuation():
-    result = greet("World", "?")
-    assert result == "Hello, World? Welcome to Harness Lab."

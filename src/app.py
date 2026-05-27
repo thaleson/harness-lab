@@ -1,6 +1,9 @@
 """Harness Lab - Mini Harness Engineering system."""
 
 
-def greet(name: str) -> str:
+def greet(
+    name: str,
+    punctuation: str = "!",
+) -> str:
     """Return a greeting message."""
-    return f"Hello, {name}! Welcome to Harness Lab."
+    return f"Hello, {name}{punctuation} Welcome to Harness Lab."
